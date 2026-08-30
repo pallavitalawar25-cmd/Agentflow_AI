@@ -1,0 +1,1 @@
+module.exports = async (workflow) => ({ agent: 'planner', level: 'info', message: `Planned ${workflow.nodes.length} workflow nodes.`, metadata: { confidence: 0.96, nodeOrder: workflow.nodes.map((n) => n.id) } });

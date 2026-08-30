@@ -1,0 +1,1 @@
+const router = require('express').Router(); const auth = require('../middleware/auth'); const c = require('../controllers/executionController'); router.use(auth); router.get('/', c.list); router.get('/:id', c.get); router.get('/:id/timeline', c.timeline); module.exports = router;

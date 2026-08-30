@@ -1,0 +1,11 @@
+const { collection } = require('../config/store');
+const ai = require('./aiService');
+const workflows = collection('workflows');
+const own = (id, owner) => workflows.find((w) => w._id === id && w.owner === owner);
+exports.list = (owner) => workflows.filter((w) => w.owner === owner).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+exports.get = (id, owner) => own(id, owner);
+exports.create = (owner, fields) => workflows.create({ name: fields.name || 'Untitled workflow', description: fields.description || '', owner, status: 'draft', triggerConfig: fields.triggerConfig || { type: 'manual' }, nodes: fields.nodes || [], edges: fields.edges || [], tags: fields.tags || [], version: 1 });
+exports.update = (id, owner, fields) => { const workflow = own(id, owner); if (!workflow) return null; workflows.update(workflow, { ...fields, version: (workflow.version || 1) + 1 }); return workflow; };
+exports.remove = (id, owner) => workflows.remove((w) => w._id === id && w.owner === owner);
+exports.duplicate = (id, owner) => { const workflow = own(id, owner); return workflow && workflows.create({ ...workflow, _id: undefined, name: `${workflow.name} (copy)`, status: 'draft', version: 1 }); };
+exports.generate = (prompt) => ai.generate(prompt);

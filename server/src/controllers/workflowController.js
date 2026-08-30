@@ -1,0 +1,11 @@
+const { validationResult } = require('express-validator'); const workflows = require('../services/workflowService'); const orchestrator = require('../agents/orchestrator');
+const invalid = (req, res) => { const errors = validationResult(req); return errors.isEmpty() ? false : (res.status(422).json({ message: errors.array()[0].msg }), true); };
+exports.list = (req, res) => res.json({ workflows: workflows.list(req.user.id) });
+exports.get = (req, res) => { const workflow = workflows.get(req.params.id, req.user.id); return workflow ? res.json({ workflow }) : res.status(404).json({ message: 'Workflow not found.' }); };
+exports.create = (req, res) => { if (!invalid(req, res)) res.status(201).json({ workflow: workflows.create(req.user.id, req.body) }); };
+exports.update = (req, res) => { const workflow = workflows.update(req.params.id, req.user.id, req.body); return workflow ? res.json({ workflow }) : res.status(404).json({ message: 'Workflow not found.' }); };
+exports.remove = (req, res) => res.status(workflows.remove(req.params.id, req.user.id) ? 204 : 404).end();
+exports.duplicate = (req, res) => { const workflow = workflows.duplicate(req.params.id, req.user.id); return workflow ? res.status(201).json({ workflow }) : res.status(404).json({ message: 'Workflow not found.' }); };
+exports.generate = async (req, res, next) => { try { if (!invalid(req, res)) res.json({ workflow: await workflows.generate(req.body.prompt) }); } catch (e) { next(e); } };
+exports.execute = async (req, res, next) => { try { const workflow = workflows.get(req.params.id, req.user.id); if (!workflow) return res.status(404).json({ message: 'Workflow not found.' }); res.status(201).json({ execution: await orchestrator.run(workflow, req.user.id) }); } catch (e) { next(e); } };
+exports.dashboard = (req, res) => { const list = workflows.list(req.user.id); const runs = orchestrator.list(req.user.id); res.json({ workflowCount: list.length, activeWorkflows: list.filter((w) => w.status === 'active').length, executionCount: runs.length, completedCount: runs.filter((e) => e.status === 'COMPLETED').length, recentExecutions: runs.slice(0, 5) }); };
